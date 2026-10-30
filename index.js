@@ -1,15 +1,16 @@
 const express = require("express");
+const path = require("path");
 const { Pool } = require("pg");
 
 const app = express();
 app.use(express.json());
+app.use(express.static(path.join(__dirname, "public")));
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
 });
 
-// Create table on startup
 pool.query(`CREATE TABLE IF NOT EXISTS dishes (
   id SERIAL PRIMARY KEY,
   name TEXT NOT NULL,
@@ -30,6 +31,11 @@ app.post("/dishes", async (req, res) => {
     [name, price]
   );
   res.status(201).json(rows[0]);
+});
+
+app.delete("/dishes/:id", async (req, res) => {
+  await pool.query("DELETE FROM dishes WHERE id = $1", [req.params.id]);
+  res.json({ deleted: true });
 });
 
 app.listen(process.env.PORT || 3000);

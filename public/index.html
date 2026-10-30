@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Food Menu</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 520px; margin: 40px auto; padding: 0 16px; background: #fafafa; }
+    h1 { text-align: center; }
+    form { display: flex; gap: 8px; margin-bottom: 20px; }
+    input { padding: 10px; border: 1px solid #ccc; border-radius: 6px; }
+    #name { flex: 2; } #price { flex: 1; }
+    button { padding: 10px 14px; border: 0; border-radius: 6px; background: #e63946; color: #fff; cursor: pointer; }
+    ul { list-style: none; padding: 0; }
+    li { display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 12px; margin-bottom: 8px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+    .price { font-weight: bold; margin: 0 12px; }
+    .del { background: #555; padding: 6px 10px; }
+    #status { text-align: center; color: #888; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <h1>🍕 Food Menu</h1>
+  <form id="form">
+    <input id="name" placeholder="Dish name" required>
+    <input id="price" type="number" step="0.01" placeholder="Price" required>
+    <button type="submit">Add</button>
+  </form>
+  <ul id="list"></ul>
+  <p id="status">Loading...</p>
+
+  <script>
+    const list = document.getElementById("list");
+    const statusEl = document.getElementById("status");
+
+    async function load() {
+      try {
+        const res = await fetch("/dishes");
+        const dishes = await res.json();
+        list.innerHTML = "";
+        dishes.forEach(d => {
+          const li = document.createElement("li");
+          const name = document.createElement("span");
+          name.textContent = d.name;
+          const price = document.createElement("span");
+          price.className = "price";
+          price.textContent = "₹" + d.price;
+          const del = document.createElement("button");
+          del.className = "del";
+          del.textContent = "Delete";
+          del.onclick = async () => {
+            await fetch("/dishes/" + d.id, { method: "DELETE" });
+            load();
+          };
+          li.append(name, price, del);
+          list.appendChild(li);
+        });
+        statusEl.textContent = "Live • updated " + new Date().toLocaleTimeString();
+      } catch (e) {
+        statusEl.textContent = "Cannot reach server...";
+      }
+    }
+
+    document.getElementById("form").onsubmit = async (e) => {
+      e.preventDefault();
+      await fetch("/dishes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: document.getElementById("name").value,
+          price: document.getElementById("price").value
+        })
+      });
+      e.target.reset();
+      load();
+    };
+
+    load();
+    setInterval(load, 3000);
+  </script>
+</body>
+</html>
